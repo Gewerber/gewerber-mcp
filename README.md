@@ -48,7 +48,7 @@ See `.env.example`. Never commit a real `.env`.
     "gewerber-admin": {
       "command": "dart",
       "args": [
-        "run", "-C", "/absolute/path/to/gewerber-mcp", "bin/gewerber_mcp.dart"
+        "run", "/absolute/path/to/gewerber-mcp/bin/gewerber_mcp.dart"
       ],
       "env": {
         "GEWERBER_MCP_API_URL": "http://localhost:8080",
@@ -89,7 +89,7 @@ dart compile exe bin/gewerber_mcp.dart -o build/gewerber-mcp
 | `users_get` | `userId` (UUID) | moderator | Full dossier: profile, auth status, memberships, global role |
 | `users_ban` | `userId`, `reason`, `confirm` | **admin** | Block sign-in immediately, purge refresh tokens, audit reason |
 | `users_unban` | `userId`, `confirm` | **admin** | Lift a ban |
-| `users_verify_email_check` | `userId` | moderator | Read-only email-verification compliance check (audited) |
+| `users_verify_email_check` | `userId` | **admin** | Read-only email-verification compliance check (audited) |
 | `businesses_search` | `query?`, `limit?`, `cursor?` | moderator | Keyset-paginated business search by name |
 | `businesses_get` | `businessId` | moderator | Business with all memberships |
 | `membership_set_role` | `membershipId`, `role` (`owner`\|`admin`\|`member`), `confirm` | **admin** | Change tenant role; refuses demoting the last owner |
@@ -129,9 +129,8 @@ dart test        # unit tests, no live backend needed
 ```
 
 Dependency resolution: `pubspec.yaml` points at the public GitHub repos
-(`feat/admin-api` until merged; the branch must be pushed first). For local
-development a gitignored `pubspec_overrides.yaml` maps both packages to
-sibling checkouts:
+(`main`; the admin API landed there with PR #7). For local development a
+gitignored `pubspec_overrides.yaml` maps both packages to sibling checkouts:
 
 ```yaml
 dependency_overrides:
