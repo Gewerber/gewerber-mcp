@@ -1,0 +1,99 @@
+import 'package:dart_mcp/server.dart';
+import 'package:gewerber_backend_client/gewerber_backend_client.dart';
+import 'package:gewerber_mcp/gewerber_mcp.dart';
+import 'package:serverpod_auth_idp_client/serverpod_auth_idp_client.dart';
+import 'package:test/test.dart';
+
+void main() {
+  group('describeToolError', () {
+    test('ToolInputError → Invalid arguments prefix', () {
+      final text = describeToolError(ToolInputError('`userId` must be a UUID'));
+      expect(text, startsWith('Invalid arguments:'));
+      expect(text, contains('userId'));
+    });
+
+    test('ValidationException renders message and field', () {
+      final text = describeToolError(
+        ValidationException(message: 'confirm must be true', field: 'confirm'),
+      );
+      expect(text, contains('Validation failed on `confirm`'));
+      expect(text, contains('confirm must be true'));
+    });
+
+    test('NotFoundException renders "NotFound: <entityType> <entityId>"', () {
+      final text = describeToolError(
+        NotFoundException(entityType: 'AuthUser', entityId: 'abc-123'),
+      );
+      expect(text, 'NotFound: AuthUser abc-123');
+    });
+
+    test('NotFoundException without id omits the id part', () {
+      final text = describeToolError(NotFoundException(entityType: 'Business'));
+      expect(text, 'NotFound: Business');
+    });
+
+    test('ConflictException renders the backend message', () {
+      final text = describeToolError(
+        ConflictException(
+          message: 'Cannot demote the last owner of this business',
+        ),
+      );
+      expect(text, 'Conflict: Cannot demote the last owner of this business');
+    });
+
+    test('ForbiddenException hints at missing global role', () {
+      final text = describeToolError(ForbiddenException());
+      expect(text, startsWith('Forbidden:'));
+      expect(text, contains('admin_user'));
+    });
+
+    test('EmailAccountLoginException points at env credentials', () {
+      final text = describeToolError(
+        EmailAccountLoginException(
+          reason: EmailAccountLoginExceptionReason.invalidCredentials,
+        ),
+      );
+      expect(text, contains('GEWERBER_MCP_EMAIL'));
+      expect(text, contains('invalidCredentials'));
+    });
+
+    test('ServerpodClientUnauthorized mentions refresh/re-login failure', () {
+      final text = describeToolError(ServerpodClientUnauthorized());
+      expect(text, contains('401'));
+      expect(text, contains('GEWERBER_MCP_EMAIL'));
+    });
+
+    test('ServerpodClientForbidden explains role requirements', () {
+      final text = describeToolError(ServerpodClientForbidden());
+      expect(text, contains('403'));
+      expect(text, contains('moderator'));
+    });
+
+    test('unexpected errors get a generic message with the error text', () {
+      final text = describeToolError(StateError('boom'));
+      expect(text, startsWith('Unexpected MCP server error'));
+      expect(text, contains('boom'));
+    });
+  });
+
+  group('errorResult / jsonResult / prettyJson', () {
+    test('errorResult is flagged as an error', () {
+      final result = errorResult('nope');
+      expect(result.isError, isTrue);
+      expect((result.content.single as TextContent).text, 'nope');
+    });
+
+    test('jsonResult pretty-prints its payload', () {
+      final result = jsonResult({
+        'a': 1,
+        'nested': {
+          'b': [2, 3],
+        },
+      });
+      expect(result.isError ?? false, isFalse);
+      final text = (result.content.single as TextContent).text;
+      expect(text, contains('\n')); // multi-line = indented
+      expect(text, contains('"a": 1'));
+    });
+  });
+}
