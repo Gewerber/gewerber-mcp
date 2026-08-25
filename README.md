@@ -103,6 +103,13 @@ dart compile exe bin/gewerber_mcp.dart -o build/gewerber-mcp
 Dates are ISO-8601 strings (`2026-01-31`, `2026-01-31T23:59:59Z`). UUIDs must
 be in canonical form. Results are returned as pretty-printed JSON.
 
+## Prompts
+
+| Prompt | Arguments | Purpose |
+|---|---|---|
+| `admin_dashboard` | – | Daily operational review playbook: `stats_overview` growth numbers → overdue invoices via `invoices_list` → recent mutations via `audit_query` (since=yesterday), ending with a risk summary. Read-only. |
+| `investigate_user` | `email` (required) | Account investigation playbook: `users_search` → `users_get` dossier → `audit_query` correlation → recommendation; guardrails for read-only checks vs. confirmed bans. |
+
 ## Authentication flow
 
 On startup the server signs in via the backend's email IdP

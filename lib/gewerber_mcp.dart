@@ -5,6 +5,7 @@ library;
 export 'src/auth/backend_auth.dart';
 export 'src/config/config.dart';
 export 'src/errors/tool_errors.dart';
+export 'src/prompts/admin_prompts.dart';
 export 'src/tools/gewerber_mcp_server.dart';
 export 'src/tools/tool_context.dart';
 export 'src/util/parsing.dart';

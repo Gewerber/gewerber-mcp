@@ -1,0 +1,50 @@
+# Continuous integration for the gewerber-mcp package.
+#
+#   - `dart pub get`
+#   - `dart analyze` (must be clean)
+#   - `dart test`   (unit tests, no live backend required)
+#
+# Triggers on every PR and on pushes to main. Make this check required in
+# branch protection so merges always pass analyze + tests.
+#
+# No repository secrets are required. Note: pubspec.yaml pulls
+# gewerber_backend_client from the feat/admin-api branch of the public
+# gewerber-backend repository — until that branch is pushed/merged, `pub get`
+# fails and this workflow stays red by design. Developers work locally via a
+# gitignored pubspec_overrides.yaml instead.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze-test:
+    name: Analyze & test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # pubspec.yaml requires SDK ^3.12.0; stable currently satisfies it.
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Install dependencies
+        run: dart pub get
+
+      - name: Analyze
+        run: dart analyze
+
+      - name: Run tests
+        run: dart test
