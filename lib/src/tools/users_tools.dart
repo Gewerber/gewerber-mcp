@@ -137,7 +137,7 @@ List<AdminTool> usersTools(ToolContext ctx) {
         description:
             'READ-ONLY compliance check of a user\'s email verification state '
             '(audited as admin.verifyEmailCheck). Throws NotFound if the user '
-            'has no email account. Requires moderator role or higher.',
+            'has no email account. Requires admin role.',
         inputSchema: Schema.object(
           properties: {'userId': Schema.string(description: 'AuthUser UUID.')},
           required: ['userId'],
