@@ -1,0 +1,15 @@
+# Dart / pub
+.dart_tool/
+build/
+# Local resolution always uses gitignored pubspec_overrides.yaml, so a
+# committed lock file would describe the wrong graph.
+pubspec.lock
+pubspec_overrides.yaml
+*.exe
+
+# Secrets
+.env
+
+# IDE
+.idea/
+.vscode/

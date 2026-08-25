@@ -1,0 +1,38 @@
+name: gewerber_mcp
+description: >-
+  MCP server that lets AI agents administer the Gewerber backend as
+  admin/moderator through its Serverpod endpoints (no direct DB access).
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.12.0
+
+executables:
+  gewerber-mcp: gewerber_mcp
+
+dependencies:
+  dart_mcp: ^0.5.2
+  # TODO: replace `ref` with `main` once the feat/admin-api branch is merged.
+  gewerber_backend_client:
+    git:
+      url: https://github.com/Gewerber/gewerber-backend.git
+      path: gewerber_backend_client
+      ref: feat/admin-api # TODO: switch to main after the admin API merge.
+  # The generated backend client imports the commercial module's client, but
+  # does not declare it; declare the public stub here so non-workspace builds
+  # resolve. Keep `ref` aligned with gewerber_backend_server.
+  gewerber_commercial_client:
+    git:
+      url: https://github.com/Gewerber/gewerber-backend--stubs.git
+      ref: main
+      path: gewerber_commercial_client
+  # Auth endpoint types (EmailAccountLoginException + re-exports of
+  # serverpod_auth_core_client such as JwtAuthKeyProvider/AuthSuccess); keep
+  # in sync with the version pinned by gewerber_backend_client.
+  serverpod_auth_idp_client: 4.0.0-beta.3
+
+dev_dependencies:
+  lints: ^6.0.0
+  stream_channel: ^2.1.4
+  test: ^1.25.15
