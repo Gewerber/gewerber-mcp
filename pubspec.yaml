@@ -13,12 +13,11 @@ executables:
 
 dependencies:
   dart_mcp: ^0.5.2
-  # TODO: replace `ref` with `main` once the feat/admin-api branch is merged.
   gewerber_backend_client:
     git:
       url: https://github.com/Gewerber/gewerber-backend.git
       path: gewerber_backend_client
-      ref: feat/admin-api # TODO: switch to main after the admin API merge.
+      ref: main
   # The generated backend client imports the commercial module's client, but
   # does not declare it; declare the public stub here so non-workspace builds
   # resolve. Keep `ref` aligned with gewerber_backend_server.
