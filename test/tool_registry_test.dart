@@ -130,7 +130,14 @@ void main() {
       );
       expect(
         statusValues,
-        containsAll(['draft', 'sent', 'paid', 'partiallyPaid', 'cancelled']),
+        unorderedEquals([
+          'draft',
+          'sent',
+          'paid',
+          'partiallyPaid',
+          'overdue',
+          'cancelled',
+        ]),
       );
     });
 

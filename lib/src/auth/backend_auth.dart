@@ -13,8 +13,8 @@ final class BackendAuthException implements Exception {
 
 /// Owns the admin session against the Gewerber backend.
 ///
-/// - [signIn] performs the initial email+password login and stores the
-///   resulting `access`/`refresh` tokens ([AuthSuccess]).
+/// - [BackendAuth.signIn] performs the initial email+password login and
+///   stores the resulting `access`/`refresh` tokens ([AuthSuccess]).
 /// - A [JwtAuthKeyProvider] is attached to the client so every request carries
 ///   `Authorization: Bearer <jwt>` and access tokens are refreshed
 ///   proactively before they expire.
@@ -24,7 +24,24 @@ final class BackendAuthException implements Exception {
 ///   rethrown for the caller to map into a tool result.
 final class BackendAuth {
   /// Creates the auth layer and wires the JWT provider into [client].
-  BackendAuth(this._client, this._email, this._password) {
+  ///
+  /// The [signInStub]/[refreshStub] hooks replace the real endpoint calls;
+  /// they exist for unit tests so the recovery logic can be exercised without
+  /// a live backend. Production code never passes them.
+  BackendAuth(
+    this._client,
+    this._email,
+    this._password, {
+    Future<AuthSuccess> Function(String email, String password)? signInStub,
+    Future<AuthSuccess> Function(String refreshToken)? refreshStub,
+  }) : _doSignIn =
+           signInStub ??
+           ((String email, String password) =>
+               _client.emailIdp.login(email: email, password: password)),
+       _doRefresh =
+           refreshStub ??
+           ((String token) =>
+               _client.jwtRefresh.refreshAccessToken(refreshToken: token)) {
     _client.authKeyProvider = JwtAuthKeyProvider(
       getAuthInfo: () async => _auth,
       onRefreshAuthInfo: (success) async => _auth = success,
@@ -35,6 +52,9 @@ final class BackendAuth {
   final Client _client;
   final String _email;
   final String _password;
+
+  final Future<AuthSuccess> Function(String email, String password) _doSignIn;
+  final Future<AuthSuccess> Function(String refreshToken) _doRefresh;
 
   AuthSuccess? _auth;
   bool _signedIn = false;
@@ -51,7 +71,7 @@ final class BackendAuth {
   /// credentials are rejected (wrong password, unknown account, blocked user).
   Future<void> signIn() async {
     try {
-      _auth = await _client.emailIdp.login(email: _email, password: _password);
+      _auth = await _doSignIn(_email, _password);
       _signedIn = true;
     } on EmailAccountLoginException catch (e) {
       _signedIn = false;
@@ -94,9 +114,7 @@ final class BackendAuth {
     final refreshToken = _auth?.refreshToken;
     if (refreshToken != null) {
       try {
-        _auth = await _client.jwtRefresh.refreshAccessToken(
-          refreshToken: refreshToken,
-        );
+        _auth = await _doRefresh(refreshToken);
         _signedIn = true;
         return;
       } on RefreshTokenMalformedException {

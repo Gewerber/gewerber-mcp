@@ -69,10 +69,25 @@ void main() {
       expect(text, contains('moderator'));
     });
 
-    test('unexpected errors get a generic message with the error text', () {
+    test('BackendAuthException passes the operator message through', () {
+      final text = describeToolError(
+        BackendAuthException(
+          'Backend sign-in failed: invalid credentials. '
+          'Check GEWERBER_MCP_EMAIL / GEWERBER_MCP_PASSWORD.',
+        ),
+      );
+      expect(text, contains('GEWERBER_MCP_EMAIL'));
+      // No generic prefix: session-level auth failures are actionable.
+      expect(text, isNot(startsWith('Unexpected')));
+    });
+
+    test('unexpected errors stay opaque; details live on stderr only', () {
       final text = describeToolError(StateError('boom'));
       expect(text, startsWith('Unexpected MCP server error'));
-      expect(text, contains('boom'));
+      // Internal error details must never leak into the conversation; the
+      // full error + stack trace are logged to stderr by ToolContext.guarded.
+      expect(text, isNot(contains('boom')));
+      expect(text, contains('logs'));
     });
   });
 

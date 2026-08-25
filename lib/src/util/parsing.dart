@@ -63,11 +63,13 @@ int? optionalInt(
   return value;
 }
 
-/// Default page size used when the agent does not pass an explicit limit.
-const int defaultPageLimit = 20;
+/// Default page size used when the agent does not pass an explicit limit;
+/// mirrors `defaultAdminListLimit` in the backend's `admin_list_limits.dart`.
+const int defaultPageLimit = 50;
 
-/// Maximum page size the tools allow (mirrors sane backend limits).
-const int maxPageLimit = 100;
+/// Maximum page size; mirrors the backend hard cap of 200 rows per page
+/// (`admin_list_limits.dart` / `core/pagination/list_limits.dart`).
+const int maxPageLimit = 200;
 
 /// Parses a UUID argument into a [UuidValue].
 UuidValue requireUuid(Map<String, Object?> args, String name) {

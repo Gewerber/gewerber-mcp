@@ -33,8 +33,9 @@ final class ToolContext {
   final BackendAuth auth;
 
   /// Wraps [handler] so every invocation is logged (optional, stderr) and
-  /// any thrown error becomes an `isError` tool result instead of crashing
-  /// the MCP session. Protocol-level [RpcException]s are rethrown untouched.
+  /// any thrown error becomes an `isError` tool result — per the MCP spec,
+  /// tool errors are returned as results to the model, not protocol errors,
+  /// so they never crash the MCP session.
   AdminToolHandler guarded(String toolName, AdminToolHandler handler) =>
       (CallToolRequest request) async {
         final stopwatch = Stopwatch()..start();

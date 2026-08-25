@@ -145,6 +145,13 @@ void main() {
   });
 
   group('limit bounds', () {
+    test('page-size constants mirror the backend admin API', () {
+      // Backend source of truth: modules/admin/domain/admin_list_limits.dart
+      // (defaultAdminListLimit = 50, hard cap 200 via core/pagination).
+      expect(defaultPageLimit, 50);
+      expect(maxPageLimit, 200);
+    });
+
     test('optionalInt enforces min/max', () {
       expect(optionalInt({'limit': 50}, 'limit', max: maxPageLimit), 50);
       expect(optionalInt({}, 'limit', max: maxPageLimit), isNull);

@@ -1,6 +1,8 @@
 import 'dart:io';
 
 /// Package version reported to MCP clients during initialization.
+///
+/// Keep in sync with `version:` in pubspec.yaml.
 const String gewerberMcpVersion = '0.1.0';
 
 /// Thrown when the environment does not contain a usable configuration.

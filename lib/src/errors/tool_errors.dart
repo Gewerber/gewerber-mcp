@@ -4,6 +4,8 @@ import 'package:dart_mcp/server.dart';
 import 'package:gewerber_backend_client/gewerber_backend_client.dart';
 import 'package:serverpod_auth_idp_client/serverpod_auth_idp_client.dart';
 
+import '../auth/backend_auth.dart';
+
 /// Invalid tool input supplied by the agent (bad UUID, unknown enum value,
 /// non-ISO date, missing `confirm`, …).
 final class ToolInputError implements Exception {
@@ -30,10 +32,16 @@ CallToolResult errorResult(String message) =>
 /// Maps any error thrown inside a tool handler into an agent-readable text.
 ///
 /// Generated backend exceptions are rendered with their actual fields
-/// (e.g. `NotFound: AuthUser <id>`); anything unexpected gets a generic
-/// message plus a hint to check the server logs. This function never throws.
+/// (e.g. `NotFound: AuthUser <id>`); unexpected errors stay deliberately
+/// opaque — their details are logged to stderr by [ToolContext.guarded], the
+/// agent only gets a pointer to the logs. This function never throws.
 String describeToolError(Object error) {
   switch (error) {
+    case final BackendAuthException e:
+      // Session-level auth failure mid-run (banned account, rotated
+      // password, …): the operator message is already precise and
+      // actionable — pass it through verbatim.
+      return e.message;
     case final ToolInputError e:
       return 'Invalid arguments: ${e.message}';
     case ValidationException(:final field, :final message):
@@ -72,7 +80,10 @@ String describeToolError(Object error) {
     case ServerpodClientException(:final statusCode, :final message):
       return 'Backend request failed (HTTP $statusCode): $message';
     default:
-      return 'Unexpected MCP server error: $error — check the gewerber-mcp '
-          'logs (stderr) and the backend logs.';
+      // Deliberately opaque: internal error details (and the stack trace)
+      // are written to stderr by ToolContext.guarded; the agent only gets a
+      // pointer to the logs so internals never leak into the conversation.
+      return 'Unexpected MCP server error — check the gewerber-mcp logs '
+          '(stderr) and the backend logs.';
   }
 }
