@@ -40,18 +40,67 @@ See `.env.example`. Never commit a real `.env`.
 
 ## Connecting an agent
 
-### opencode / Claude Desktop compatible
+opencode and Claude Desktop use **incompatible** configuration formats. Never
+copy a snippet from one into the other — a Claude Desktop block pasted into
+opencode produces an MCP server that never starts.
+
+### opencode
+
+Config file: `~/.config/opencode/opencode.json` or `opencode.jsonc`
+(both extensions are supported), or project-local `./opencode.json`.
+Schema: top-level key is `mcp` (not `mcpServers`), every
+entry requires `"type": "local"`, `command` is a single array of strings (no
+separate `args`), env vars go under `environment` (not `env`), and entries
+can be toggled with the optional `enabled` flag.
+
+```json
+{
+  "mcp": {
+    "gewerber-admin": {
+      "type": "local",
+      "command": [
+        "dart", "run", "/absolute/path/to/gewerber-mcp/bin/gewerber_mcp.dart"
+      ],
+      "environment": {
+        "GEWERBER_MCP_EMAIL": "admin@example.com",
+        "GEWERBER_MCP_PASSWORD": "change-me"
+      },
+      "enabled": true
+    }
+  }
+}
+```
+
+The server reads its configuration exclusively from process environment
+variables (`Platform.environment`) and does not auto-load the repo's
+gitignored `.env`. With opencode you can source `.env` inside the command
+instead of duplicating secrets into the config file:
+
+```json
+"command": [
+  "bash",
+  "-c",
+  "set -a; source /absolute/path/to/gewerber-mcp/.env; exec dart run /absolute/path/to/gewerber-mcp/bin/gewerber_mcp.dart"
+]
+```
+
+`set -a` exports every variable that is sourced; `exec` replaces the bash
+process with the dart process so stdio lifecycle and signals stay clean.
+
+### Claude Desktop
+
+Config file: `claude_desktop_config.json`. Schema: top-level key
+`mcpServers` with a flat `command` string, an `args` array, and an `env`
+object. Claude Desktop does **not** support `dart run` — pass the script
+path to `dart` as shown, or use the compiled binary (see below):
 
 ```json
 {
   "mcpServers": {
     "gewerber-admin": {
       "command": "dart",
-      "args": [
-        "run", "/absolute/path/to/gewerber-mcp/bin/gewerber_mcp.dart"
-      ],
+      "args": ["/absolute/path/to/gewerber-mcp/bin/gewerber_mcp.dart"],
       "env": {
-        "GEWERBER_MCP_API_URL": "http://localhost:8080",
         "GEWERBER_MCP_EMAIL": "admin@example.com",
         "GEWERBER_MCP_PASSWORD": "change-me"
       }
@@ -66,18 +115,29 @@ See `.env.example`. Never commit a real `.env`.
 dart compile exe bin/gewerber_mcp.dart -o build/gewerber-mcp
 ```
 
+opencode:
+
 ```json
 {
-  "mcpServers": {
+  "mcp": {
     "gewerber-admin": {
-      "command": "/absolute/path/to/gewerber-mcp/build/gewerber-mcp",
-      "env": {
+      "type": "local",
+      "command": ["/absolute/path/to/gewerber-mcp/build/gewerber-mcp"],
+      "environment": {
         "GEWERBER_MCP_EMAIL": "admin@example.com",
         "GEWERBER_MCP_PASSWORD": "change-me"
-      }
+      },
+      "enabled": true
     }
   }
 }
+```
+
+For Claude Desktop, keep the `mcpServers` shape from above and set
+`"command"` to the binary path directly (credentials stay under `"env"`):
+
+```json
+"command": "/absolute/path/to/gewerber-mcp/build/gewerber-mcp"
 ```
 
 ## Tools
