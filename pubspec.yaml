@@ -21,11 +21,11 @@ dependencies:
   # The generated backend client imports the commercial module's client, but
   # does not declare it; declare the public stub here so non-workspace builds
   # resolve. Keep `ref` aligned with gewerber_backend_server.
-  gewerber_commercial_client:
+  gewerber_backend_commercial_client:
     git:
       url: https://github.com/Gewerber/gewerber-backend--stubs.git
       ref: main
-      path: gewerber_commercial_client
+      path: gewerber_backend_commercial_client
   # Auth endpoint types (EmailAccountLoginException + re-exports of
   # serverpod_auth_core_client such as JwtAuthKeyProvider/AuthSuccess); keep
   # in sync with the version pinned by gewerber_backend_client.
