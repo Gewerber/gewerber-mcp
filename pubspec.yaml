@@ -23,7 +23,7 @@ dependencies:
   # resolve. Keep `ref` aligned with gewerber_backend_server.
   gewerber_backend_commercial_client:
     git:
-      url: https://github.com/Gewerber/gewerber-backend--stubs.git
+      url: https://github.com/Gewerber/gewerber-backend-stubs.git
       ref: main
       path: gewerber_backend_commercial_client
   # Auth endpoint types (EmailAccountLoginException + re-exports of

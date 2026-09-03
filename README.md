@@ -197,7 +197,7 @@ dependency_overrides:
   gewerber_backend_client:
     path: ../gewerber-backend/gewerber_backend_client
   gewerber_backend_commercial_client:
-    path: ../gewerber-backend--stubs/gewerber_backend_commercial_client
+    path: ../gewerber-backend-stubs/gewerber_backend_commercial_client
 ```
 
 ## Troubleshooting
