@@ -1,4 +1,10 @@
 import 'package:gewerber_backend_client/gewerber_backend_client.dart';
+import 'package:gewerber_backend_commercial_client/gewerber_backend_commercial_client.dart'
+    show
+        AdminPromoCodeCreateRequest,
+        PromoCodeKind,
+        PromoCodeStatus,
+        PromoDiscountType;
 
 import '../errors/tool_errors.dart';
 
@@ -59,6 +65,15 @@ int? optionalInt(
   if (value == null) return null;
   if (value is! int || value < min || value > max) {
     throw ToolInputError('`$name` must be an integer between $min and $max.');
+  }
+  return value;
+}
+
+/// Reads a mandatory positive integer argument (ids, counts).
+int requirePositiveInt(Map<String, Object?> args, String name) {
+  final value = args[name];
+  if (value is! int || value < 1) {
+    throw ToolInputError('`$name` must be a positive integer.');
   }
   return value;
 }
@@ -129,6 +144,129 @@ const Map<String, InvoiceStatus> invoiceStatusValues = {
 InvoiceStatus? optionalInvoiceStatus(Map<String, Object?> args, String name) {
   if (!args.containsKey(name) || args[name] == null) return null;
   return _enumArg(invoiceStatusValues, args, name);
+}
+
+/// Values of [PromoCodeKind] as accepted by the backend.
+const Map<String, PromoCodeKind> promoCodeKindValues = {
+  'trial': PromoCodeKind.trial,
+  'discount': PromoCodeKind.discount,
+  'attribution': PromoCodeKind.attribution,
+};
+
+/// Values of [PromoCodeStatus] as accepted by the backend.
+const Map<String, PromoCodeStatus> promoCodeStatusValues = {
+  'active': PromoCodeStatus.active,
+  'disabled': PromoCodeStatus.disabled,
+  'archived': PromoCodeStatus.archived,
+};
+
+/// Values of [PromoDiscountType] as accepted by the backend.
+const Map<String, PromoDiscountType> promoDiscountTypeValues = {
+  'percent': PromoDiscountType.percent,
+  'fixed': PromoDiscountType.fixed,
+};
+
+/// Parses a required [PromoCodeKind] argument from its serialized name.
+PromoCodeKind requirePromoCodeKind(Map<String, Object?> args, String name) =>
+    _enumArg(promoCodeKindValues, args, name);
+
+/// Parses a required [PromoCodeStatus] argument from its serialized name.
+PromoCodeStatus requirePromoCodeStatus(
+  Map<String, Object?> args,
+  String name,
+) => _enumArg(promoCodeStatusValues, args, name);
+
+/// Parses an optional [PromoCodeStatus] filter argument.
+PromoCodeStatus? optionalPromoCodeStatus(
+  Map<String, Object?> args,
+  String name,
+) {
+  if (!args.containsKey(name) || args[name] == null) return null;
+  return _enumArg(promoCodeStatusValues, args, name);
+}
+
+/// Parses an optional [PromoDiscountType] argument.
+PromoDiscountType? optionalPromoDiscountType(
+  Map<String, Object?> args,
+  String name,
+) {
+  if (!args.containsKey(name) || args[name] == null) return null;
+  return _enumArg(promoDiscountTypeValues, args, name);
+}
+
+/// Maps `promo_code_create` arguments into an [AdminPromoCodeCreateRequest].
+///
+/// Applies the same kind-sanity rules as the backend (`trial` requires
+/// `trialDays >= 1`; `discount` requires `discountType` plus the matching
+/// value; caps must be >= 1; `validUntil` must be after `validFrom`) so the
+/// agent gets an immediate, precise error instead of a round-trip. The
+/// backend re-validates everything (and normalizes `code`).
+AdminPromoCodeCreateRequest buildPromoCodeCreateRequest(
+  Map<String, Object?> args,
+) {
+  final kind = requirePromoCodeKind(args, 'kind');
+  final trialDays = optionalInt(args, 'trialDays', max: 1 << 62);
+  final discountType = optionalPromoDiscountType(args, 'discountType');
+  final discountPercent = optionalInt(args, 'discountPercent', max: 100);
+  final discountMinor = optionalInt(args, 'discountMinor', max: 1 << 62);
+  final maxRedemptions = optionalInt(args, 'maxRedemptions', max: 1 << 62);
+  final perUserLimit = optionalInt(args, 'perUserLimit', max: 1 << 62);
+  final validFrom = optionalIsoDate(args, 'validFrom');
+  final validUntil = optionalIsoDate(args, 'validUntil');
+
+  switch (kind) {
+    case PromoCodeKind.trial:
+      if (trialDays == null) {
+        throw ToolInputError(
+          '`trialDays` (integer >= 1) is required for kind="trial".',
+        );
+      }
+    case PromoCodeKind.discount:
+      if (discountType == null) {
+        throw ToolInputError(
+          '`discountType` ("percent" or "fixed") is required for '
+          'kind="discount".',
+        );
+      }
+      if (discountType == PromoDiscountType.percent &&
+          discountPercent == null) {
+        throw ToolInputError(
+          '`discountPercent` (integer 1-100) is required with '
+          'discountType="percent".',
+        );
+      }
+      if (discountType == PromoDiscountType.fixed && discountMinor == null) {
+        throw ToolInputError(
+          '`discountMinor` (EUR minor units, integer >= 1) is required with '
+          'discountType="fixed".',
+        );
+      }
+    case PromoCodeKind.attribution:
+      break;
+  }
+
+  if (validFrom != null &&
+      validUntil != null &&
+      !validUntil.isAfter(validFrom)) {
+    throw ToolInputError('`validUntil` must be after `validFrom`.');
+  }
+
+  return AdminPromoCodeCreateRequest(
+    code: requireString(args, 'code'),
+    kind: kind,
+    discountType: discountType,
+    discountPercent: discountPercent,
+    discountMinor: discountMinor,
+    trialDays: trialDays,
+    planCode: optionalString(args, 'planCode'),
+    maxRedemptions: maxRedemptions,
+    perUserLimit: perUserLimit,
+    validFrom: validFrom,
+    validUntil: validUntil,
+    campaign: optionalString(args, 'campaign'),
+    ref: optionalString(args, 'ref'),
+    note: optionalString(args, 'note'),
+  );
 }
 
 T _enumArg<T>(Map<String, T> values, Map<String, Object?> args, String name) {

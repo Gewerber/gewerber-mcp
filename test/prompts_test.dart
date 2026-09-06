@@ -134,8 +134,8 @@ void main() {
   });
 
   group('server wiring', () {
-    test('registered tool list stays at 15 alongside prompts', () {
-      expect(server.tools, hasLength(15));
+    test('registered tool list stays at 21 alongside prompts', () {
+      expect(server.tools, hasLength(21));
       expect(server.prompts, hasLength(2));
     });
   });
