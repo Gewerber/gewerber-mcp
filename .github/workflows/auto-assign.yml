@@ -1,0 +1,51 @@
+# Auto-assigns every newly opened issue and pull request to the maintainer.
+#
+# - Skips items authored by the assignee (no self-noise).
+# - Skips items that already have assignees.
+# - Uses `pull_request_target` so PRs from forks are covered too; safe because
+#   this workflow never checks out or executes repository code.
+name: Auto Assign
+
+on:
+  issues:
+    types: [opened]
+  pull_request_target:
+    types: [opened]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  auto-assign:
+    name: Auto-assign new issue/PR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Assign to dimoshka
+        uses: actions/github-script@v7
+        env:
+          AUTO_ASSIGN_TO: dimoshka
+        with:
+          script: |
+            const assignee = process.env.AUTO_ASSIGN_TO;
+            const { issue, pull_request: pr } = context.payload;
+            const item = issue ?? pr;
+            if (!item) {
+              core.warning('Unsupported event payload ÔÇö skipping.');
+              return;
+            }
+            if (item.user.login === assignee) {
+              core.info(`Skipped #${item.number}: opened by ${assignee}.`);
+              return;
+            }
+            if ((item.assignees ?? []).length > 0) {
+              core.info(`Skipped #${item.number}: already has assignees.`);
+              return;
+            }
+            await github.rest.issues.addAssignees({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: item.number,
+              assignees: [assignee],
+            });
+            core.info(`Assigned #${item.number} (${issue ? 'issue' : 'PR'}) to @${assignee}.`);
