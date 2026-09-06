@@ -2,9 +2,20 @@ import 'dart:convert';
 
 import 'package:dart_mcp/server.dart';
 import 'package:gewerber_backend_client/gewerber_backend_client.dart';
+import 'package:gewerber_backend_commercial_client/gewerber_backend_commercial_client.dart'
+    show PromoException, SubscriptionAdminException;
 import 'package:serverpod_auth_idp_client/serverpod_auth_idp_client.dart';
 
 import '../auth/backend_auth.dart';
+
+/// `SubscriptionAdminException.reason` values that point at a missing or
+/// insufficient global admin role (commercial module's `admin_user`
+/// allowlist) rather than at bad input.
+const Set<String> _subscriptionAdminRoleReasons = {
+  'notAuthenticated',
+  'noRole',
+  'insufficientRole',
+};
 
 /// Invalid tool input supplied by the agent (bad UUID, unknown enum value,
 /// non-ISO date, missing `confirm`, …).
@@ -62,6 +73,25 @@ String describeToolError(Object error) {
     case AuthUserBlockedException():
       return 'The configured admin account is blocked on the backend. '
           'Unban it or configure a different GEWERBER_MCP_EMAIL.';
+    case SubscriptionAdminException(
+      :final message,
+      :final field,
+      :final reason,
+    ):
+      return [
+        'Subscription admin refused the request: $message',
+        if (field != null) '(field `$field`)',
+        if (reason != null) '(reason: $reason)',
+        if (_subscriptionAdminRoleReasons.contains(reason))
+          'The signed-in account is not on the `admin_user` allowlist with '
+              'the required role — grant it out of band (grant_admin.sql).',
+      ].join(' ');
+    case PromoException(:final message, :final field, :final reason):
+      return [
+        'Promo code error: $message',
+        if (field != null) '(field `$field`)',
+        if (reason != null) '(reason: $reason)',
+      ].join(' ');
     case ServerpodClientUnauthorized():
       return 'Not authenticated (HTTP 401): token refresh and re-login both '
           'failed. Check GEWERBER_MCP_EMAIL / GEWERBER_MCP_PASSWORD and that '
@@ -77,7 +107,7 @@ String describeToolError(Object error) {
           'admin API? URL/config mismatch?';
     case ServerpodClientInternalServerError():
       return 'Backend internal error (HTTP 500). Check the backend logs.';
-    case ServerpodClientException(:final statusCode, :final message):
+    case ServerpodClientHttpException(:final statusCode, :final message):
       return 'Backend request failed (HTTP $statusCode): $message';
     default:
       // Deliberately opaque: internal error details (and the stack trace)

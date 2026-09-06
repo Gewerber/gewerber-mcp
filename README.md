@@ -159,6 +159,12 @@ For Claude Desktop, keep the `mcpServers` shape from above and set
 | `audit_query` | `actorUserId?`, `action?`, `since?`, `limit?` | moderator | Newest-first audit trail |
 | `guidance_tips_list` | – | moderator | Effective guidance tips as users see them |
 | `guidance_tip_upsert` | `topic`, `title`, `body`, `confirm` | **admin** | Create/replace an admin tip by unique topic |
+| `promo_code_create` | `code`, `kind` (`trial`\|`discount`\|`attribution`), `planCode?`, `trialDays?`, `discountType?` (`percent`\|`fixed`), `discountPercent?`, `discountMinor?`, `maxRedemptions?`, `perUserLimit?`, `validFrom?`, `validUntil?`, `campaign?`, `ref?`, `note?`, `confirm` | **admin** | Create a subscription promo code (starts `active`, audited) |
+| `promo_codes_list` | `status?` (`active`\|`disabled`\|`archived`), `limit?` | moderator | Compact promo-code list, newest first, with redemption counts |
+| `promo_code_get` | `id` | moderator | Full promo-code detail incl. recent redemptions (UTM labels) |
+| `subscription_stats` | – | moderator | Portfolio stats: counts per status, live subs, MRR (EUR cents), plan/campaign breakdowns |
+| `subscription_get` | `userId` (UUID) | moderator | All subscription rows of a user, newest first (plan, period, promo used) |
+| `promo_code_set_status` | `id`, `status` (`active`\|`disabled`\|`archived`), `confirm` | **admin** | Set a promo code's lifecycle status (audited) |
 
 Dates are ISO-8601 strings (`2026-01-31`, `2026-01-31T23:59:59Z`). UUIDs must
 be in canonical form. Results are returned as pretty-printed JSON.

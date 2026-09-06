@@ -27,6 +27,13 @@ const expectedToolNames = [
   //
   'guidance_tips_list',
   'guidance_tip_upsert',
+  //
+  'promo_code_create',
+  'promo_codes_list',
+  'promo_code_get',
+  'subscription_stats',
+  'subscription_get',
+  'promo_code_set_status',
 ];
 
 /// Tools that mutate backend state; they must demand `confirm`.
@@ -36,6 +43,8 @@ const destructiveToolNames = {
   'membership_set_role',
   'invoice_cancel_admin',
   'guidance_tip_upsert',
+  'promo_code_create',
+  'promo_code_set_status',
 };
 
 void main() {
@@ -139,6 +148,31 @@ void main() {
           'cancelled',
         ]),
       );
+
+      final kindValues = enumValuesOf(
+        toolsByName['promo_code_create']!,
+        'kind',
+      );
+      expect(kindValues, unorderedEquals(['trial', 'discount', 'attribution']));
+
+      final discountValues = enumValuesOf(
+        toolsByName['promo_code_create']!,
+        'discountType',
+      );
+      expect(discountValues, unorderedEquals(['percent', 'fixed']));
+
+      final promoStatusValues = enumValuesOf(
+        toolsByName['promo_code_set_status']!,
+        'status',
+      );
+      expect(
+        promoStatusValues,
+        unorderedEquals(['active', 'disabled', 'archived']),
+      );
+      expect(
+        enumValuesOf(toolsByName['promo_codes_list']!, 'status'),
+        unorderedEquals(['active', 'disabled', 'archived']),
+      );
     });
 
     test('key arguments exist where agents need them', () {
@@ -165,6 +199,45 @@ void main() {
       expect(
         propertiesOf(toolsByName['invoices_list']!).keys,
         containsAll(['businessId', 'status', 'from', 'to', 'limit', 'cursor']),
+      );
+      expect(
+        requiredArgs(toolsByName['promo_code_create']!),
+        containsAll(['code', 'kind']),
+      );
+      expect(
+        propertiesOf(toolsByName['promo_code_create']!).keys,
+        containsAll([
+          'planCode',
+          'trialDays',
+          'discountType',
+          'discountPercent',
+          'discountMinor',
+          'maxRedemptions',
+          'perUserLimit',
+          'validFrom',
+          'validUntil',
+          'campaign',
+          'ref',
+          'note',
+        ]),
+      );
+      expect(
+        requiredArgs(toolsByName['promo_code_set_status']!),
+        containsAll(['id', 'status']),
+      );
+      expect(requiredArgs(toolsByName['promo_code_get']!), containsAll(['id']));
+      expect(
+        requiredArgs(toolsByName['subscription_get']!),
+        containsAll(['userId']),
+      );
+      expect(
+        propertiesOf(toolsByName['promo_codes_list']!).keys,
+        containsAll(['status', 'limit']),
+      );
+      expect(
+        propertiesOf(toolsByName['subscription_stats']!),
+        isEmpty,
+        reason: 'subscription_stats takes no arguments',
       );
     });
   });
