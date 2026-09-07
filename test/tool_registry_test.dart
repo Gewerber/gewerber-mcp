@@ -34,6 +34,10 @@ const expectedToolNames = [
   'subscription_stats',
   'subscription_get',
   'promo_code_set_status',
+  //
+  'paypal_plan_sync',
+  'paypal_plans_status',
+  'paypal_discount_variant_sync',
 ];
 
 /// Tools that mutate backend state; they must demand `confirm`.
@@ -45,6 +49,8 @@ const destructiveToolNames = {
   'guidance_tip_upsert',
   'promo_code_create',
   'promo_code_set_status',
+  'paypal_plan_sync',
+  'paypal_discount_variant_sync',
 };
 
 void main() {
@@ -238,6 +244,20 @@ void main() {
         propertiesOf(toolsByName['subscription_stats']!),
         isEmpty,
         reason: 'subscription_stats takes no arguments',
+      );
+      expect(
+        requiredArgs(toolsByName['paypal_discount_variant_sync']!),
+        containsAll(['promoCodeId']),
+      );
+      expect(
+        propertiesOf(toolsByName['paypal_plan_sync']!).keys,
+        unorderedEquals(['confirm']),
+        reason: 'paypal_plan_sync only takes confirm',
+      );
+      expect(
+        propertiesOf(toolsByName['paypal_plans_status']!),
+        isEmpty,
+        reason: 'paypal_plans_status takes no arguments',
       );
     });
   });

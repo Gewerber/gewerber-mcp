@@ -165,6 +165,9 @@ For Claude Desktop, keep the `mcpServers` shape from above and set
 | `subscription_stats` | – | moderator | Portfolio stats: counts per status, live subs, MRR (EUR cents), plan/campaign breakdowns |
 | `subscription_get` | `userId` (UUID) | moderator | All subscription rows of a user, newest first (plan, period, promo used) |
 | `promo_code_set_status` | `id`, `status` (`active`\|`disabled`\|`archived`), `confirm` | **admin** | Set a promo code's lifecycle status (audited) |
+| `paypal_plan_sync` | `confirm` | **admin** | Provision/update PayPal product + plans from the plan catalog; idempotent, run after price changes or before first checkout (audited) |
+| `paypal_plans_status` | – | moderator | PayPal provisioning status per plan (product/plan ids, monthly/annual synced) and per active discount promo (variant synced) |
+| `paypal_discount_variant_sync` | `promoCodeId`, `confirm` | **admin** | Provision the PayPal plan variant of one discount promo — required before the code works at checkout (audited) |
 
 Dates are ISO-8601 strings (`2026-01-31`, `2026-01-31T23:59:59Z`). UUIDs must
 be in canonical form. Results are returned as pretty-printed JSON.
