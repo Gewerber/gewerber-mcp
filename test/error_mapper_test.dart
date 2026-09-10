@@ -1,5 +1,7 @@
 import 'package:dart_mcp/server.dart';
 import 'package:gewerber_backend_client/gewerber_backend_client.dart';
+import 'package:gewerber_backend_commercial_client/gewerber_backend_commercial_client.dart'
+    show PromoException, SubscriptionAdminException;
 import 'package:gewerber_mcp/gewerber_mcp.dart';
 import 'package:serverpod_auth_idp_client/serverpod_auth_idp_client.dart';
 import 'package:test/test.dart';
@@ -45,6 +47,70 @@ void main() {
       final text = describeToolError(ForbiddenException());
       expect(text, startsWith('Forbidden:'));
       expect(text, contains('admin_user'));
+    });
+
+    test('SubscriptionAdminException renders message, field and reason', () {
+      final text = describeToolError(
+        SubscriptionAdminException(
+          message: 'Unknown promo code id 4711',
+          field: 'promoCodeId',
+          reason: 'notFound',
+        ),
+      );
+      expect(text, contains('Unknown promo code id 4711'));
+      expect(text, contains('(field `promoCodeId`)'));
+      expect(text, contains('(reason: notFound)'));
+      // notFound is an input problem, not a role problem: no allowlist hint.
+      expect(text, isNot(contains('grant_admin.sql')));
+    });
+
+    test('SubscriptionAdminException role reasons add the allowlist hint', () {
+      for (final reason in ['noRole', 'insufficientRole', 'notAuthenticated']) {
+        final text = describeToolError(
+          SubscriptionAdminException(
+            message: 'Missing admin role',
+            field: 'role',
+            reason: reason,
+          ),
+        );
+        expect(text, contains('(reason: $reason)'));
+        expect(text, contains('admin_user'), reason: reason);
+        expect(text, contains('grant_admin.sql'), reason: reason);
+      }
+    });
+
+    test(
+      'SubscriptionAdminException without optional fields still renders',
+      () {
+        final text = describeToolError(
+          SubscriptionAdminException(message: 'Endpoint unavailable'),
+        );
+        expect(text, contains('Subscription admin refused the request'));
+        expect(text, contains('Endpoint unavailable'));
+        expect(text, isNot(contains('field')));
+        expect(text, isNot(contains('reason')));
+      },
+    );
+
+    test('PromoException renders message, field and reason', () {
+      final text = describeToolError(
+        PromoException(
+          message: 'Code contains illegal characters',
+          field: 'code',
+          reason: 'badFormat',
+        ),
+      );
+      expect(text, startsWith('Promo code error:'));
+      expect(text, contains('Code contains illegal characters'));
+      expect(text, contains('(field `code`)'));
+      expect(text, contains('(reason: badFormat)'));
+    });
+
+    test('ServerpodClientHttpException reports the status code', () {
+      final text = describeToolError(
+        ServerpodClientUnknownHttpException('teapot', 418),
+      );
+      expect(text, contains('418'));
     });
 
     test('EmailAccountLoginException points at env credentials', () {

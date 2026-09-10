@@ -1,4 +1,6 @@
 import 'package:gewerber_backend_client/gewerber_backend_client.dart';
+import 'package:gewerber_backend_commercial_client/gewerber_backend_commercial_client.dart'
+    show PromoCodeKind, PromoCodeStatus, PromoDiscountType;
 import 'package:gewerber_mcp/gewerber_mcp.dart';
 import 'package:test/test.dart';
 
@@ -162,6 +164,252 @@ void main() {
       expect(
         () => optionalInt({'limit': 1000}, 'limit', max: maxPageLimit),
         throwsToolInputError,
+      );
+    });
+
+    test('requirePositiveInt rejects missing/zero/negative/non-int', () {
+      expect(requirePositiveInt({'id': 7}, 'id'), 7);
+      expect(() => requirePositiveInt({}, 'id'), throwsToolInputError);
+      expect(() => requirePositiveInt({'id': 0}, 'id'), throwsToolInputError);
+      expect(() => requirePositiveInt({'id': -3}, 'id'), throwsToolInputError);
+      expect(() => requirePositiveInt({'id': '7'}, 'id'), throwsToolInputError);
+    });
+  });
+
+  group('promo code enums', () {
+    test('maps match the backend enum names', () {
+      expect(promoCodeKindValues.keys, ['trial', 'discount', 'attribution']);
+      expect(promoCodeStatusValues.keys, ['active', 'disabled', 'archived']);
+      expect(promoDiscountTypeValues.keys, ['percent', 'fixed']);
+    });
+
+    test('requirePromoCodeKind rejects unknown values and lists allowed', () {
+      expect(
+        requirePromoCodeKind({'kind': 'trial'}, 'kind'),
+        PromoCodeKind.trial,
+      );
+      try {
+        requirePromoCodeKind({'kind': 'freebie'}, 'kind');
+        fail('expected ToolInputError');
+      } on ToolInputError catch (e) {
+        expect(e.message, contains('"trial"'));
+        expect(e.message, contains('"discount"'));
+        expect(e.message, contains('"attribution"'));
+      }
+    });
+
+    test('status accessors parse / pass through null', () {
+      expect(
+        requirePromoCodeStatus({'status': 'archived'}, 'status'),
+        PromoCodeStatus.archived,
+      );
+      expect(optionalPromoCodeStatus({}, 'status'), isNull);
+      expect(
+        optionalPromoCodeStatus({'status': 'disabled'}, 'status'),
+        PromoCodeStatus.disabled,
+      );
+      expect(
+        () => optionalPromoCodeStatus({'status': 'gone'}, 'status'),
+        throwsToolInputError,
+      );
+      expect(
+        optionalPromoDiscountType({'discountType': 'percent'}, 'discountType'),
+        PromoDiscountType.percent,
+      );
+      expect(optionalPromoDiscountType({}, 'discountType'), isNull);
+    });
+  });
+
+  group('buildPromoCodeCreateRequest', () {
+    test('maps a full trial request incl. ISO dates and optional fields', () {
+      final request = buildPromoCodeCreateRequest({
+        'code': ' SPRING26 ',
+        'kind': 'trial',
+        'trialDays': 30,
+        'planCode': 'pro-monthly',
+        'maxRedemptions': 500,
+        'perUserLimit': 2,
+        'validFrom': '2026-03-01',
+        'validUntil': '2026-03-31T23:59:59Z',
+        'campaign': 'spring-26',
+        'ref': 'press',
+        'note': 'internal',
+      });
+      expect(request.code, 'SPRING26');
+      expect(request.kind, PromoCodeKind.trial);
+      expect(request.trialDays, 30);
+      expect(request.planCode, 'pro-monthly');
+      expect(request.maxRedemptions, 500);
+      expect(request.perUserLimit, 2);
+      expect(request.validFrom!.isAtSameMomentAs(DateTime(2026, 3, 1)), isTrue);
+      expect(
+        request.validUntil!.isAtSameMomentAs(
+          DateTime.utc(2026, 3, 31, 23, 59, 59),
+        ),
+        isTrue,
+      );
+      expect(request.campaign, 'spring-26');
+      expect(request.ref, 'press');
+      expect(request.note, 'internal');
+    });
+
+    test('perUserLimit defaults to 1 when omitted', () {
+      final request = buildPromoCodeCreateRequest({
+        'code': 'X',
+        'kind': 'attribution',
+      });
+      expect(request.perUserLimit, 1);
+      expect(request.trialDays, isNull);
+      expect(request.discountType, isNull);
+    });
+
+    test('discount/percent and discount/fixed map their values', () {
+      final percent = buildPromoCodeCreateRequest({
+        'code': 'P',
+        'kind': 'discount',
+        'discountType': 'percent',
+        'discountPercent': 25,
+      });
+      expect(percent.discountType, PromoDiscountType.percent);
+      expect(percent.discountPercent, 25);
+
+      final fixed = buildPromoCodeCreateRequest({
+        'code': 'F',
+        'kind': 'discount',
+        'discountType': 'fixed',
+        'discountMinor': 500,
+      });
+      expect(fixed.discountType, PromoDiscountType.fixed);
+      expect(fixed.discountMinor, 500);
+    });
+
+    test('trial without trialDays is rejected with a precise error', () {
+      expect(
+        () => buildPromoCodeCreateRequest({'code': 'X', 'kind': 'trial'}),
+        throwsA(
+          isA<ToolInputError>().having(
+            (e) => e.message,
+            'message',
+            contains('trialDays'),
+          ),
+        ),
+      );
+    });
+
+    test('discount without type / matching value is rejected', () {
+      expect(
+        () => buildPromoCodeCreateRequest({'code': 'X', 'kind': 'discount'}),
+        throwsA(
+          isA<ToolInputError>().having(
+            (e) => e.message,
+            'message',
+            contains('discountType'),
+          ),
+        ),
+      );
+      expect(
+        () => buildPromoCodeCreateRequest({
+          'code': 'X',
+          'kind': 'discount',
+          'discountType': 'percent',
+        }),
+        throwsA(
+          isA<ToolInputError>().having(
+            (e) => e.message,
+            'message',
+            contains('discountPercent'),
+          ),
+        ),
+      );
+      expect(
+        () => buildPromoCodeCreateRequest({
+          'code': 'X',
+          'kind': 'discount',
+          'discountType': 'fixed',
+        }),
+        throwsA(
+          isA<ToolInputError>().having(
+            (e) => e.message,
+            'message',
+            contains('discountMinor'),
+          ),
+        ),
+      );
+    });
+
+    test('missing code / kind produce required-argument errors', () {
+      expect(
+        () => buildPromoCodeCreateRequest({'kind': 'attribution'}),
+        throwsA(
+          isA<ToolInputError>().having(
+            (e) => e.message,
+            'message',
+            contains('`code`'),
+          ),
+        ),
+      );
+      expect(
+        () => buildPromoCodeCreateRequest({'code': 'X'}),
+        throwsA(
+          isA<ToolInputError>().having(
+            (e) => e.message,
+            'message',
+            contains('`kind`'),
+          ),
+        ),
+      );
+    });
+
+    test('bad enum value / bad date / inverted window are rejected', () {
+      expect(
+        () => buildPromoCodeCreateRequest({'code': 'X', 'kind': 'bogus'}),
+        throwsToolInputError,
+      );
+      expect(
+        () => buildPromoCodeCreateRequest({
+          'code': 'X',
+          'kind': 'attribution',
+          'validUntil': '31.03.2026',
+        }),
+        throwsToolInputError,
+      );
+      expect(
+        () => buildPromoCodeCreateRequest({
+          'code': 'X',
+          'kind': 'attribution',
+          'validFrom': '2026-04-01',
+          'validUntil': '2026-03-01',
+        }),
+        throwsA(
+          isA<ToolInputError>().having(
+            (e) => e.message,
+            'message',
+            contains('after'),
+          ),
+        ),
+      );
+    });
+
+    test('out-of-range discountPercent is rejected', () {
+      expect(
+        () => buildPromoCodeCreateRequest({
+          'code': 'X',
+          'kind': 'discount',
+          'discountType': 'percent',
+          'discountPercent': 101,
+        }),
+        throwsToolInputError,
+      );
+    });
+
+    test('result serializes with the protocol class name', () {
+      final request = buildPromoCodeCreateRequest({
+        'code': 'X',
+        'kind': 'attribution',
+      });
+      expect(
+        request.toJsonForProtocol()['__className__'],
+        'gewerber_backend_commercial.AdminPromoCodeCreateRequest',
       );
     });
   });
