@@ -252,6 +252,19 @@ void main() {
       }
     });
 
+    test('port value beyond int range is a problem, not a crash', () {
+      expect(
+        () => CliArgs.parse(['--port', '99999999999999999999']),
+        throwsA(
+          isA<ConfigurationException>().having(
+            (e) => e.problems.single,
+            'problem',
+            contains('is not a valid port number'),
+          ),
+        ),
+      );
+    });
+
     test('trims whitespace around values', () {
       final cli = CliArgs.parse([
         '--host',
@@ -274,6 +287,11 @@ void main() {
     test('detects --help and -h among other arguments', () {
       expect(CliArgs.wantsHelp(['--host', 'x', '--help']), isTrue);
       expect(CliArgs.wantsHelp(['-h']), isTrue);
+    });
+
+    test('detects the --help=value form in wantsHelp and parse', () {
+      expect(CliArgs.wantsHelp(['--help=x']), isTrue);
+      expect(CliArgs.parse(['--help=x']).help, isTrue);
     });
 
     test('is false without a help flag', () {

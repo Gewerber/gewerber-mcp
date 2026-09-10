@@ -85,12 +85,10 @@ final class CliArgs {
         case '--port':
           final raw = takeValue();
           if (raw == null) break;
-          if (!_portPattern.hasMatch(raw)) {
+          final parsed = _portPattern.hasMatch(raw) ? int.tryParse(raw) : null;
+          if (parsed == null) {
             problems.add('$name value "$raw" is not a valid port number');
-            break;
-          }
-          final parsed = int.parse(raw);
-          if (parsed < 1 || parsed > 65535) {
+          } else if (parsed < 1 || parsed > 65535) {
             problems.add(
               '$name value "$raw" is out of range (must be 1..65535)',
             );

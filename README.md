@@ -63,7 +63,6 @@ and usually land in the shell history. On shared machines keep passing the
 password via `GEWERBER_MCP_PASSWORD` and use flags only for non-secret
 settings.
 
-
 ## Connecting an agent
 
 opencode and Claude Desktop use **incompatible** configuration formats. Never
