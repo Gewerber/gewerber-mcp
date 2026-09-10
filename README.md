@@ -27,7 +27,9 @@ writes an audit trail entry for every mutation.
   for the Gewerber org: no OSS artifact may depend on it, and everything it
   can do is bounded by the global role of the configured service account.
 
-## Configuration (environment variables)
+## Configuration
+
+### Environment variables
 
 | Variable | Required | Default | Purpose |
 |---|---|---|---|
@@ -38,6 +40,29 @@ writes an audit trail entry for every mutation.
 | `GEWERBER_MCP_LOG_TOOLS` | no | off | `true` logs every tool call to **stderr** |
 
 See `.env.example`. Never commit a real `.env`.
+
+### Command-line arguments
+
+The launch settings can also be passed as flags; `--help` (or `-h`) prints the
+same table and exits.
+
+| Flag | Env equivalent | Default | Purpose |
+|---|---|---|---|
+| `--host <host>` | host of `GEWERBER_MCP_API_URL` | `localhost` | Replace the backend host, keeping the URL's scheme and port |
+| `--port <port>` | port of `GEWERBER_MCP_API_URL` | `8080` | Replace the backend port (1–65535), keeping scheme and host |
+| `--email <email>` / `--login <email>` | `GEWERBER_MCP_EMAIL` | — | Admin/moderator account email (required) |
+| `--password <password>` | `GEWERBER_MCP_PASSWORD` | — | Account password (required) |
+| `--help` / `-h` | — | — | Print usage and exit |
+
+Both `--flag value` and `--flag=value` are accepted; a repeated flag keeps its
+last value. Precedence per setting: **command line > environment > default**.
+`GEWERBER_MCP_SERVER_NAME` and `GEWERBER_MCP_LOG_TOOLS` stay environment-only.
+
+**Security:** command-line arguments are visible to every local user via `ps`
+and usually land in the shell history. On shared machines keep passing the
+password via `GEWERBER_MCP_PASSWORD` and use flags only for non-secret
+settings.
+
 
 ## Connecting an agent
 
@@ -72,10 +97,10 @@ can be toggled with the optional `enabled` flag.
 }
 ```
 
-The server reads its configuration exclusively from process environment
-variables (`Platform.environment`) and does not auto-load the repo's
-gitignored `.env`. With opencode you can source `.env` inside the command
-instead of duplicating secrets into the config file:
+The server reads its configuration from process environment variables
+(`Platform.environment`) and the optional command-line flags above, and does
+not auto-load the repo's gitignored `.env`. With opencode you can source `.env`
+inside the command instead of duplicating secrets into the config file:
 
 ```json
 "command": [
@@ -87,6 +112,29 @@ instead of duplicating secrets into the config file:
 
 `set -a` exports every variable that is sourced; `exec` replaces the bash
 process with the dart process so stdio lifecycle and signals stay clean.
+
+opencode has no separate `args` key — append the flags to the same `command`
+array (keep secrets like the password in `environment`):
+
+```json
+{
+  "mcp": {
+    "gewerber-admin": {
+      "type": "local",
+      "command": [
+        "dart", "run", "/absolute/path/to/gewerber-mcp/bin/gewerber_mcp.dart",
+        "--login", "admin@example.com",
+        "--port", "443"
+      ],
+      "environment": {
+        "GEWERBER_MCP_API_URL": "https://api.gewerber.de",
+        "GEWERBER_MCP_PASSWORD": "change-me"
+      },
+      "enabled": true
+    }
+  }
+}
+```
 
 ### Claude Desktop
 
@@ -109,6 +157,9 @@ path to `dart` as shown, or use the compiled binary (see below):
   }
 }
 ```
+
+The same flags can be appended to the `args` array after the script path:
+`"args": ["/absolute/path/to/gewerber-mcp/bin/gewerber_mcp.dart", "--login", "admin@example.com", "--port", "443"]`.
 
 ### Compiled binary (faster startup)
 
@@ -215,6 +266,7 @@ dependency_overrides:
 | Symptom | Cause & fix |
 |---|---|
 | Startup error listing missing env vars | Set `GEWERBER_MCP_EMAIL` / `GEWERBER_MCP_PASSWORD` (see `.env.example`) |
+| `unknown option "…"` / `missing value for --…` at startup | Typo or malformed flag in the agent's command line — run once with `--help` to see the accepted options |
 | `invalid credentials` at startup | Wrong email/password — check the env values; also confirm the account is not blocked |
 | Tool result `NotFound: …` | Entity id does not exist; re-check ids with the search/get tools first |
 | Tool result `Forbidden: …` | Account has no (or too low) global role in the `admin_user` allowlist — grant `moderator` for reads, `admin` for writes via `grant_admin.sql`; then retry |
