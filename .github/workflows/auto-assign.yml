@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Assign to dimoshka
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           AUTO_ASSIGN_TO: dimoshka
         with:
