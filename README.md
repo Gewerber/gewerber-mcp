@@ -23,8 +23,9 @@ writes an audit trail entry for every mutation.
 - All mutations (`users_ban`, `users_unban`, `membership_set_role`,
   `invoice_cancel_admin`, `guidance_tip_upsert`) require an explicit
   `confirm: true` parameter and are audited on the backend.
-- This package is private infrastructure. Do not publish it or wire it into
-  any OSS artifact.
+- This repository is public (MIT), but it is **internal operations tooling**
+  for the Gewerber org: no OSS artifact may depend on it, and everything it
+  can do is bounded by the global role of the configured service account.
 
 ## Configuration (environment variables)
 
@@ -223,8 +224,9 @@ dependency_overrides:
 
 ## Scope & limitations
 
-- Only the open-core admin surface is exposed. Payment/banking/tax modules
-  are intentionally out of scope (open-core boundaries).
+- Beyond the platform-admin surface, only subscription administration needed
+  for commercial operations is exposed (promo codes, plan catalog sync);
+  banking and tax functionality is out of scope (open-core boundaries).
 - No DB access: everything goes through generated endpoint clients.
 - Unit tests run offline; end-to-end behaviour against a live backend should
   be smoke-tested manually after `serverpod start`.
