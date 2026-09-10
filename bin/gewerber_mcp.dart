@@ -3,19 +3,26 @@ import 'dart:io';
 import 'package:dart_mcp/stdio.dart';
 import 'package:gewerber_backend_client/gewerber_backend_client.dart';
 import 'package:gewerber_mcp/src/auth/backend_auth.dart';
+import 'package:gewerber_mcp/src/config/cli_args.dart';
 import 'package:gewerber_mcp/src/config/config.dart';
 import 'package:gewerber_mcp/src/tools/gewerber_mcp_server.dart';
 import 'package:gewerber_mcp/src/tools/tool_context.dart';
 
 /// Entry point of the Gewerber admin MCP server.
 ///
-/// Reads configuration from `GEWERBER_MCP_*` environment variables, signs in
-/// against the backend and then serves MCP over stdio until the client
-/// disconnects.
-Future<void> main() async {
+/// Reads configuration from `GEWERBER_MCP_*` environment variables, optionally
+/// overridden by the `--host`, `--port`, `--email`/`--login` and `--password`
+/// command-line arguments (`--help` / `-h` prints the usage), signs in against
+/// the backend and then serves MCP over stdio until the client disconnects.
+Future<void> main(List<String> args) async {
+  if (CliArgs.wantsHelp(args)) {
+    stdout.writeln(CliArgs.usage);
+    return;
+  }
+
   final McpConfig config;
   try {
-    config = McpConfig.fromEnvironment();
+    config = McpConfig.load(args: args);
   } on ConfigurationException catch (e) {
     stderr.writeln('gewerber-mcp: ${e.message}');
     exitCode = 64; // EX_USAGE

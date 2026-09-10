@@ -3,6 +3,7 @@
 library;
 
 export 'src/auth/backend_auth.dart';
+export 'src/config/cli_args.dart';
 export 'src/config/config.dart';
 export 'src/errors/tool_errors.dart';
 export 'src/prompts/admin_prompts.dart';
