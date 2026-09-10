@@ -1,16 +1,24 @@
 import 'dart:io';
 
+import 'cli_args.dart';
+
 /// Package version reported to MCP clients during initialization.
 ///
 /// Keep in sync with `version:` in pubspec.yaml.
 const String gewerberMcpVersion = '0.1.0';
 
-/// Thrown when the environment does not contain a usable configuration.
+/// Thrown when the launch configuration (env vars or command line) does not
+/// contain a usable value set.
 final class ConfigurationException implements Exception {
-  ConfigurationException(this.problems)
-    : message =
-          'Invalid GEWERBER_MCP_* configuration:\n'
-          '${problems.map((p) => ' - $p').join('\n')}';
+  ConfigurationException(
+    this.problems, {
+    this.title = 'Invalid GEWERBER_MCP_* configuration',
+  }) : message =
+           '$title:\n'
+           '${problems.map((p) => ' - $p').join('\n')}';
+
+  /// Header of [message], naming the configuration source.
+  final String title;
 
   /// Human readable list of all detected problems.
   final List<String> problems;
@@ -61,9 +69,27 @@ final class McpConfig {
 
   /// Parses [env] (`Platform.environment` by default).
   ///
-  /// Collects *all* problems before throwing a single
-  /// [ConfigurationException] so operators can fix everything at once.
-  factory McpConfig.fromEnvironment([Map<String, String>? env]) {
+  /// Thin delegate to [McpConfig.load] without command-line arguments.
+  factory McpConfig.fromEnvironment([Map<String, String>? env]) =>
+      McpConfig.load(env: env);
+
+  /// Loads the configuration from command-line [args] and [env]
+  /// (`Platform.environment` by default).
+  ///
+  /// Per setting the precedence is *command line > environment > default*.
+  /// `--host` and `--port` are applied to the URL taken from
+  /// `GEWERBER_MCP_API_URL` (or its default) and keep its scheme and path;
+  /// this code does no default-port stripping — the resulting `Uri` is
+  /// whatever `Uri.replace` produces (an explicit `:80` stays the URL's
+  /// port, even though `Uri.toString()` renders the default port without
+  /// the suffix).
+  ///
+  /// Invalid command-line arguments throw first (from [CliArgs.parse]);
+  /// otherwise *all* remaining problems are collected before a single
+  /// [ConfigurationException] is thrown so operators can fix everything at
+  /// once.
+  factory McpConfig.load({List<String>? args, Map<String, String>? env}) {
+    final cli = CliArgs.parse(args ?? const []);
     final environment = env ?? Platform.environment;
     final problems = <String>[];
 
@@ -91,13 +117,44 @@ final class McpConfig {
       return uri;
     }
 
-    final email = required('GEWERBER_MCP_EMAIL');
-    final password = required('GEWERBER_MCP_PASSWORD');
-    final apiUrl = parseUrl(
+    // Applies --host/--port to the URL without leaking raw Uri errors.
+    Uri? applyToUrl(Uri? base, Uri Function(Uri base) change, String problem) {
+      if (base == null) return null;
+      try {
+        return change(base);
+      } on ArgumentError {
+        problems.add(problem);
+        return null;
+      } on FormatException {
+        problems.add(problem);
+        return null;
+      }
+    }
+
+    final email = cli.email ?? required('GEWERBER_MCP_EMAIL');
+    final password = cli.password ?? required('GEWERBER_MCP_PASSWORD');
+    var apiUrl = parseUrl(
       'GEWERBER_MCP_API_URL',
       environment['GEWERBER_MCP_API_URL']?.trim(),
       fallback: Uri.parse(defaultApiUrl),
     );
+    final host = cli.host;
+    if (host != null) {
+      apiUrl = applyToUrl(
+        apiUrl,
+        (base) => base.replace(host: host),
+        '--host="$host" is not a valid host for the API URL '
+        '(use GEWERBER_MCP_API_URL for the full URL)',
+      );
+    }
+    final port = cli.port;
+    if (port != null) {
+      apiUrl = applyToUrl(
+        apiUrl,
+        (base) => base.replace(port: port),
+        '--port=$port cannot be applied to the API URL',
+      );
+    }
     final serverName =
         environment['GEWERBER_MCP_SERVER_NAME']?.trim().isNotEmpty ?? false
         ? environment['GEWERBER_MCP_SERVER_NAME']!.trim()
