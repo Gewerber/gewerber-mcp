@@ -35,7 +35,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # pubspec.yaml requires SDK ^3.12.0; stable currently satisfies it.
       - name: Set up Dart
