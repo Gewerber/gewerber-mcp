@@ -8,8 +8,9 @@ import '../config/config.dart';
 import '../errors/tool_errors.dart';
 
 /// Signature of a raw tool handler.
-typedef AdminToolHandler =
-    FutureOr<CallToolResult> Function(CallToolRequest request);
+typedef AdminToolHandler = FutureOr<CallToolResult> Function(
+  CallToolRequest request,
+);
 
 /// A tool definition plus its raw handler, before logging/error guarding.
 final class AdminTool {
