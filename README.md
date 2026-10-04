@@ -210,15 +210,6 @@ For Claude Desktop, keep the `mcpServers` shape from above and set
 | `audit_query` | `actorUserId?`, `action?`, `since?`, `limit?` | moderator | Newest-first audit trail |
 | `guidance_tips_list` | – | moderator | Effective guidance tips as users see them |
 | `guidance_tip_upsert` | `topic`, `title`, `body`, `confirm` | **admin** | Create/replace an admin tip by unique topic |
-| `promo_code_create` | `code`, `kind` (`trial`\|`discount`\|`attribution`), `planCode?`, `trialDays?`, `discountType?` (`percent`\|`fixed`), `discountPercent?`, `discountMinor?`, `maxRedemptions?`, `perUserLimit?`, `validFrom?`, `validUntil?`, `campaign?`, `ref?`, `note?`, `confirm` | **admin** | Create a subscription promo code (starts `active`, audited) |
-| `promo_codes_list` | `status?` (`active`\|`disabled`\|`archived`), `limit?` | moderator | Compact promo-code list, newest first, with redemption counts |
-| `promo_code_get` | `id` | moderator | Full promo-code detail incl. recent redemptions (UTM labels) |
-| `subscription_stats` | – | moderator | Portfolio stats: counts per status, live subs, MRR (EUR cents), plan/campaign breakdowns |
-| `subscription_get` | `userId` (UUID) | moderator | All subscription rows of a user, newest first (plan, period, promo used) |
-| `promo_code_set_status` | `id`, `status` (`active`\|`disabled`\|`archived`), `confirm` | **admin** | Set a promo code's lifecycle status (audited) |
-| `paypal_plan_sync` | `confirm` | **admin** | Provision/update PayPal product + plans from the plan catalog; idempotent, run after price changes or before first checkout (audited) |
-| `paypal_plans_status` | – | moderator | PayPal provisioning status per plan (product/plan ids, monthly/annual synced) and per active discount promo (variant synced) |
-| `paypal_discount_variant_sync` | `promoCodeId`, `confirm` | **admin** | Provision the PayPal plan variant of one discount promo — required before the code works at checkout (audited) |
 
 Dates are ISO-8601 strings (`2026-01-31`, `2026-01-31T23:59:59Z`). UUIDs must
 be in canonical form. Results are returned as pretty-printed JSON.
@@ -275,9 +266,10 @@ dependency_overrides:
 
 ## Scope & limitations
 
-- Beyond the platform-admin surface, only subscription administration needed
-  for commercial operations is exposed (promo codes, plan catalog sync);
-  banking and tax functionality is out of scope (open-core boundaries).
+- This repo exposes the platform-admin surface only (users, businesses,
+  invoices, audit, guidance, stats). Commercial operations (subscription,
+  promo-code, and payment-provider administration) and banking/tax
+  functionality are out of scope (open-core boundaries).
 - No DB access: everything goes through generated endpoint clients.
 - Unit tests run offline; end-to-end behaviour against a live backend should
   be smoke-tested manually after `serverpod start`.

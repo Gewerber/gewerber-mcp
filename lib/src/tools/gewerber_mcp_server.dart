@@ -8,9 +8,7 @@ import 'audit_tools.dart';
 import 'businesses_tools.dart';
 import 'guidance_tools.dart';
 import 'invoices_tools.dart';
-import 'paypal_tools.dart';
 import 'stats_tools.dart';
-import 'subscription_tools.dart';
 import 'tool_context.dart';
 import 'users_tools.dart';
 
@@ -25,8 +23,6 @@ List<AdminTool> buildToolCatalog(ToolContext ctx) => [
   ...invoicesTools(ctx),
   ...auditTools(ctx),
   ...guidanceTools(ctx),
-  ...subscriptionTools(ctx),
-  ...paypalTools(ctx),
 ];
 
 /// The Gewerber admin MCP server.
