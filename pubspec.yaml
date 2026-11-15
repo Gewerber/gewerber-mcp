@@ -28,14 +28,15 @@ dependencies:
       path: gewerber_backend_commercial_client
   # Auth endpoint types (EmailAccountLoginException + re-exports of
   # serverpod_auth_core_client such as JwtAuthKeyProvider/AuthSuccess).
-  # Must be >= 4.1.0: the generated gewerber_backend_client protocol code
+  # Must be >= 4.1.2: the generated gewerber_backend_client protocol code
   # uses serverpod_serialization sentinel types
   # (`UndefinedSentinel`, `$UndefinedDateTime`, `$UndefinedUuidValue`,
-  # `$UndefinedMap`) that only exist from serverpod_serialization 4.1.0.
-  # Pinning 4.1.0 pulls serverpod_client 4.1.0 -> serverpod_serialization
-  # 4.1.0, so fresh `dart pub get` (no committed lock file) resolves
+  # `$UndefinedMap`) that only exist from serverpod_serialization 4.1.0, and
+  # the backend client itself requires serverpod_auth_idp_client 4.1.2.
+  # Pinning 4.1.2 pulls serverpod_client 4.1.2 -> serverpod_serialization
+  # 4.1.2, so fresh `dart pub get` (no committed lock file) resolves
   # deterministically and compiles the generated client.
-  serverpod_auth_idp_client: 4.1.0
+  serverpod_auth_idp_client: 4.1.2
 
 dev_dependencies:
   lints: ^6.0.0
